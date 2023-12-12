@@ -24,14 +24,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 
-Issuer.discover('https://nodejs-sample.criipto.id')
+Issuer.discover('http://54.215.196.72:8080/realms/om-test')
   .then(criiptoIssuer => {
     var client = new criiptoIssuer.Client({
-      client_id: 'urn:criipto:nodejs:demo:1010',
-      client_secret: 'j9wYVyD3zXZPMo3LTq/xSU/sMu9/shiFKpTHKfqAutM=',
+      client_id: 'OpenID_Test',
+      client_secret: 'm8gOeCWH7oXG1eBq25aFmYf4h51bGEPV',
       redirect_uris: [ 'http://localhost:3000/auth/callback' ],
       post_logout_redirect_uris: [ 'http://localhost:3000/logout/callback' ],
-      token_endpoint_auth_method: 'client_secret_post'
+      token_endpoint_auth_method: 'client_secret_post',
+      response_types: ['code'],
     });
 
     app.use(
@@ -44,10 +45,11 @@ Issuer.discover('https://nodejs-sample.criipto.id')
 
     app.use(passport.initialize());
     app.use(passport.session());
-
+    var TokenSet
     passport.use(
       'oidc',
       new Strategy({ client }, (tokenSet, userinfo, done) => {
+        TokenSet = tokenSet;
         return done(null, tokenSet.claims());
       })
     );
@@ -77,7 +79,9 @@ Issuer.discover('https://nodejs-sample.criipto.id')
 
     // start logout request
     app.get('/logout', (req, res) => {
-      res.redirect(client.endSessionUrl());
+      res.redirect(client.endSessionUrl({
+        id_token_hint: TokenSet.id_token
+    }));
     });
 
     // logout callback
